@@ -1,0 +1,47 @@
+body{
+
+    background-color: black;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+
+
+}
+
+.container {
+
+
+background: white ;
+padding: 30px;
+border-radius: 10px;
+display: flex;
+flex-direction: column;
+gap: 10px;
+
+
+}
+
+input {
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    background:white;
+    gap: 20px;
+    flex-direction: column;
+    border: none;
+    color: black;
+
+}
+
+button { padding: 10px;
+    border: none;
+    border-radius: 5px;
+
+}
+
+input:focus{
+    outline: none;
+   
+}
