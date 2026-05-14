@@ -238,3 +238,40 @@ export async function updateProfile(token, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function getNotifications(token, limit = 50) {
+  return sendRequest(`/marketplace/notifications?limit=${limit}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function getUnreadNotificationCount(token) {
+  return sendRequest("/marketplace/notifications/unread-count", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function markNotificationAsRead(token, notificationId) {
+  return sendRequest(`/marketplace/notifications/${notificationId}/read`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function markAllNotificationsAsRead(token) {
+  return sendRequest("/marketplace/notifications/read-all", {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}

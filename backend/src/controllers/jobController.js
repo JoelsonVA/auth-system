@@ -38,7 +38,7 @@ exports.createJob = async (req, res) => {
         const notificationController = require("./notificationController");
         await notificationController.notifyAllUsers(
             "job",
-            `Novo trabalho: ${title}",
+            `Novo trabalho: ${title}`,
             `${clientName} publicou um novo trabalho: ${description.substring(0, 100)}...`,
             result.insertId
         );

@@ -18,17 +18,20 @@ import {
   reactivateAccount,
   deleteAccount as apiDeleteAccount,
   getAccountStatus,
-} from "./api-client.js";
-import {
   getNotifications,
+  getUnreadNotificationCount,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  deleteNotification,
-} from "./notification-api.js";
+} from "./api-client.js";
 
 const elements = {
   welcomeMessage: document.getElementById("welcomeMessage"),
   feedbackMessage: document.getElementById("feedbackMessage"),
+  notificationBell: document.getElementById("notificationBell"),
+  notificationBadge: document.getElementById("notificationBadge"),
+  notificationPanel: document.getElementById("notificationPanel"),
+  notificationsList: document.getElementById("notificationsList"),
+  markAllRead: document.getElementById("markAllRead"),
   editProfileButton: document.getElementById("editProfileButton"),
   logoutButton: document.getElementById("logoutButton"),
   freelancerSearchInput: document.getElementById("freelancerSearchInput"),
@@ -677,11 +680,103 @@ async function handleJobSubmit(event) {
   await createJob(jobData);
 }
 
+async function loadNotifications() {
+  const token = getToken();
+  if (!token) return;
+
+  try {
+    const response = await getUnreadNotificationCount(token);
+    const count = response.count || 0;
+    elements.notificationBadge.textContent = count;
+    
+    if (count > 0) {
+      elements.notificationBadge.classList.add("active");
+    } else {
+      elements.notificationBadge.classList.remove("active");
+    }
+  } catch (e) {
+    console.error("Erro ao carregar notificações:", e);
+  }
+}
+
+function toggleNotificationPanel() {
+  elements.notificationPanel.classList.toggle("hidden");
+  
+  if (!elements.notificationPanel.classList.contains("hidden")) {
+    renderNotifications();
+  }
+}
+
+async function renderNotifications() {
+  const token = getToken();
+  if (!token) return;
+
+  try {
+    const response = await getNotifications(token, 50);
+    const notifications = response.notifications || [];
+
+    if (notifications.length === 0) {
+      elements.notificationsList.innerHTML = `
+        <p class="empty-message">Nenhuma notificação</p>
+      `;
+      return;
+    }
+
+    elements.notificationsList.innerHTML = notifications.map(n => `
+      <div class="notification-item ${n.isRead ? '' : 'unread'}" data-id="${n.id}">
+        <span class="notification-item-badge ${n.type}">${n.type === 'message' ? '💬' : n.type === 'job_proposal' ? '📋' : '📢'}</span>
+        <div class="notification-content">
+          <div class="notification-item-title">${n.title}</div>
+          <div class="notification-item-content">${n.message}</div>
+          <div class="notification-item-time">${new Date(n.createdAt).toLocaleString('pt-BR')}</div>
+        </div>
+      </div>
+    `).join('');
+
+    // Adicionar listeners aos itens
+    document.querySelectorAll('.notification-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const id = item.dataset.id;
+        try {
+          await markNotificationAsRead(token, id);
+          item.classList.remove('unread');
+          await loadNotifications();
+        } catch (e) {
+          console.error("Erro ao marcar notificação como lida:", e);
+        }
+      });
+    });
+  } catch (e) {
+    console.error("Erro ao renderizar notificações:", e);
+    elements.notificationsList.innerHTML = `
+      <p class="empty-message">Erro ao carregar notificações</p>
+    `;
+  }
+}
+
+async function handleMarkAllNotificationsAsRead() {
+  const token = getToken();
+  if (!token) return;
+
+  try {
+    await markAllNotificationsAsRead(token);
+    await loadNotifications();
+    await renderNotifications();
+  } catch (e) {
+    console.error("Erro ao marcar todas as notificações como lidas:", e);
+  }
+}
+
 function bindEvents() {
   elements.logoutButton.addEventListener("click", clearSessionAndRedirect);
   elements.editProfileButton.addEventListener("click", () => {
     window.location.href = "./profile.html";
   });
+  
+  // Notification events
+  elements.notificationBell.addEventListener("click", toggleNotificationPanel);
+  elements.markAllRead.addEventListener("click", handleMarkAllNotificationsAsRead);
+  
   elements.freelancerSearchButton.addEventListener("click", loadFreelancers);
   elements.freelancerSearchInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
@@ -717,7 +812,17 @@ async function initialize() {
   bindEvents();
   showFeedback("Carregando plataforma...", "info");
   await refreshAllData();
+  await loadNotifications();
   showFeedback("Plataforma pronta para uso.", "success");
+  
+  // Recarregar notificações a cada 30 segundos
+  setInterval(async () => {
+    try {
+      await loadNotifications();
+    } catch (e) {
+      console.error("Erro ao atualizar notificações:", e);
+    }
+  }, 30000);
 }
 
 initialize();
