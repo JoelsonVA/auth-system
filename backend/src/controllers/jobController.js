@@ -35,13 +35,14 @@ exports.createJob = async (req, res) => {
         const result = await query(sql, [clientId, title, description, budget, skillsRequired, deadline]);
 
         // Notificar todos os freelancers sobre novo trabalho
-        const notificationController = require("./notificationController");
-        await notificationController.notifyAllUsers(
-            "job",
-            `Novo trabalho: ${title}",
-            `${clientName} publicou um novo trabalho: ${description.substring(0, 100)}...`,
-            result.insertId
-        );
+const notificationController = require("./notificationController");
+
+await notificationController.notifyAllUsers(
+    "job",
+    `Novo trabalho: ${title}`,
+    `${clientName} publicou um novo trabalho: ${description.substring(0, 100)}...`,
+    result.insertId
+);
 
         return res.json({
             message: "Trabalho criado com sucesso",
