@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freelance Hub | Editar Perfil</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+    <link rel="stylesheet" href="styles/profile.css">
+</head>
+<body>
+    <main class="profile-page">
+        <section class="profile-shell">
+            <header class="profile-header">
+                <div class="header-content">
+                    <h1>Editar Perfil</h1>
+                    <p id="welcomeMessage">Carregando...</p>
+                </div>
+                <button id="backButton" type="button" class="back-button">← Voltar</button>
+            </header>
+
+            <p id="feedbackMessage" class="feedback-message" role="status" aria-live="polite"></p>
+
+            <section class="profile-container">
+                <div class="profile-avatar-section">
+                    <div class="avatar-container">
+                        <img id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='100' fill='%23667eea'/%3E%3Ctext x='50%' y='50%' font-size='80' fill='white' text-anchor='middle' dominant-baseline='middle' font-family='Arial'%3EU%3C/text%3E%3C/svg%3E" alt="Avatar do perfil">
+                    </div>
+                    <div class="avatar-upload">
+                        <label for="profilePhoto">Mudar foto</label>
+                        <input type="file" id="profilePhoto" accept="image/*" style="display: none;">
+                        <p class="file-hint">JPG, PNG (máx 5MB)</p>
+                    </div>
+                </div>
+
+                <form id="profileForm" class="profile-form">
+                    <fieldset>
+                        <legend>Informações Pessoais</legend>
+                        
+                        <div class="form-group">
+                            <label for="fullName">Nome Completo</label>
+                            <input type="text" id="fullName" placeholder="Seu nome completo" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email Pessoal</label>
+                            <input type="email" id="email" placeholder="seu@email.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="professionalEmail">Email Profissional</label>
+                            <input type="email" id="professionalEmail" placeholder="seu@email@profissional.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="currentPassword">Senha Atual (para confirmar alterações)</label>
+                            <input type="password" id="currentPassword" placeholder="Digite sua senha atual">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="newPassword">Nova Senha (deixe em branco para não alterar)</label>
+                            <input type="password" id="newPassword" placeholder="Digite a nova senha">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirmar Nova Senha</label>
+                            <input type="password" id="confirmPassword" placeholder="Confirme a nova senha">
+                        </div>
+                    </fieldset>
+
+                    <fieldset id="freelancerFields">
+                        <legend>Informações Profissionais</legend>
+                        
+                        <div class="form-group">
+                            <label for="professionalTitle">Título Profissional</label>
+                            <input type="text" id="professionalTitle" placeholder="Ex: Desenvolvedor Full Stack">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="professionalEmail">Email Profissional</label>
+                            <input type="email" id="professionalEmail" placeholder="email@profissional.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="skills">Skills (separadas por vírgula)</label>
+                            <textarea id="skills" rows="3" placeholder="Node.js, React, SQL, Python..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bio">Bio/Sobre Você</label>
+                            <textarea id="bio" rows="4" placeholder="Conte um pouco sobre sua experiência e especialidades..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="location">Localização</label>
+                            <input type="text" id="location" placeholder="Cidade, Estado, País">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="hourlyRate">Valor/Hora (R$)</label>
+                            <input type="number" id="hourlyRate" min="0" step="0.01" placeholder="150.00">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="portfolioUrl">Portfolio / Website</label>
+                            <input type="url" id="portfolioUrl" placeholder="https://meuportfolio.com">
+                        </div>
+                    </fieldset>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save">Salvar Alterações</button>
+                        <button type="button" id="cancelButton" class="btn-cancel">Cancelar</button>
+                    </div>
+                </form>
+
+                <section class="danger-zone">
+                    <h3>Zona de Risco</h3>
+                    <p>Essas ações não podem ser desfeitas.</p>
+                    <div class="danger-actions">
+                        <button id="deactivateBtn" type="button" class="btn-warning">Desativar Conta (180 dias)</button>
+                        <button id="deleteBtn" type="button" class="btn-danger">Excluir Conta Permanentemente</button>
+                    </div>
+                </section>
+            </section>
+        </section>
+    </main>
+
+    <script type="module" src="scripts/profile-page.js"></script>
+</body>
+</html>

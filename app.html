@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freelance Hub | Plataforma</title>
+    <link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+    <main class="saas-page">
+        <section class="saas-shell">
+            <header class="saas-header">
+                <div>
+                    <h1>Freelance Hub</h1>
+                    <p id="welcomeMessage">Carregando sessão...</p>
+                </div>
+
+                <div class="header-actions">
+                    <div class="notification-container">
+                        <button id="notificationBell" type="button" class="notification-bell">
+                            🔔 <span id="notificationBadge" class="notification-badge">0</span>
+                        </button>
+                        <div id="notificationPanel" class="notification-panel hidden">
+                            <div class="notification-header">
+                                <h3>Notificações</h3>
+                                <button id="markAllRead" type="button" class="text-button">Marcar todas como lidas</button>
+                            </div>
+                            <div id="notificationsList" class="notifications-list">
+                                <p class="empty-message">Nenhuma notificação</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="editProfileButton" type="button">Editar Perfil</button>
+                    <button id="logoutButton" type="button" class="secondary-button">Sair</button>
+                </div>
+            </header>
+
+            <p id="feedbackMessage" class="feedback-message" role="status" aria-live="polite"></p>
+
+            <section class="marketplace-panel">
+                <div class="panel-header">
+                    <h2>Buscar Freelancers</h2>
+                    <div class="search-row">
+                        <input type="text" id="freelancerSearchInput" placeholder="Busque por nome, skill ou localização" />
+                        <button id="freelancerSearchButton" type="button">Buscar</button>
+                    </div>
+                </div>
+                <div id="freelancerList" class="freelancer-list"></div>
+            </section>
+
+            <section class="messages-panel">
+                <div class="panel-header">
+                    <h2>Mensagens</h2>
+                    <button id="refreshMessagesButton" type="button">Atualizar mensagens</button>
+                </div>
+                <div id="messagesList" class="messages-list"></div>
+            </section>
+
+            <section class="jobs-panel">
+                <div class="panel-header">
+                    <h2 id="jobsTitle">Trabalhos Disponíveis</h2>
+                    <div class="jobs-actions">
+                        <select id="jobStatusFilter">
+                            <option value="open">Abertos</option>
+                            <option value="in_progress">Em Andamento</option>
+                            <option value="completed">Concluídos</option>
+                        </select>
+                        <button id="refreshJobsButton" type="button">Atualizar</button>
+                        <button id="createJobButton" type="button" class="primary-button">Criar Trabalho</button>
+                    </div>
+                </div>
+                <div id="jobsList" class="jobs-list"></div>
+            </section>
+
+            <section class="account-panel">
+                <h2>Gerenciar Conta</h2>
+                <div class="account-actions">
+                    <button id="deactivateAccountButton" type="button" class="warning-button">Desativar Conta (180 dias)</button>
+                    <button id="deleteAccountButton" type="button" class="danger-button">Excluir Conta</button>
+                </div>
+                <div id="accountStatus" class="account-status"></div>
+            </section>
+
+            <section id="freelancerProfilePanel" class="profile-panel hidden">
+                <h2>Meu Perfil Freelancer</h2>
+                <form id="freelancerProfileForm" class="profile-form">
+                    <label for="profileProfessionalTitle">Título profissional</label>
+                    <input type="text" id="profileProfessionalTitle" placeholder="Ex: Desenvolvedor Full Stack" />
+
+                    <label for="profileSkills">Skills (separadas por vírgula)</label>
+                    <input type="text" id="profileSkills" placeholder="Node.js, React, SQL" />
+
+                    <label for="profileHourlyRate">Valor/hora (R$)</label>
+                    <input type="number" id="profileHourlyRate" min="0" step="0.01" placeholder="120" />
+
+                    <label for="profileLocation">Localização</label>
+                    <input type="text" id="profileLocation" placeholder="São Paulo, Brasil" />
+
+                    <label for="profilePortfolioUrl">Portfolio</label>
+                    <input type="url" id="profilePortfolioUrl" placeholder="https://meuportfolio.com" />
+
+                    <label for="profileBio">Bio</label>
+                    <textarea id="profileBio" rows="5" placeholder="Conte um pouco sobre sua experiência"></textarea>
+
+                    <button type="submit">Salvar perfil</button>
+                </form>
+            </section>
+
+            <section id="adminPanel" class="admin-panel hidden">
+                <h2>Painel Administrativo</h2>
+                <p id="adminSummary">Sem dados administrativos.</p>
+
+                <form id="adminStatusForm" class="admin-status-form">
+                    <label for="adminTargetEmail">Email do usuário</label>
+                    <input type="email" id="adminTargetEmail" placeholder="usuario@email.com" autocomplete="email" />
+
+                    <label for="adminTargetStatus">Status</label>
+                    <select id="adminTargetStatus">
+                        <option value="true">Conceder admin</option>
+                        <option value="false">Remover admin</option>
+                    </select>
+
+                    <button type="submit">Atualizar status</button>
+                </form>
+
+                <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Tipo</th>
+                                <th>Entradas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminUsersTableBody">
+                            <tr>
+                                <td colspan="4">Nenhum acesso registrado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <!-- Modal para enviar mensagem -->
+    <div id="messageModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Enviar mensagem</h3>
+                <button id="closeMessageModal" class="close-button">&times;</button>
+            </div>
+            <form id="messageForm" class="modal-form">
+                <label for="messageText">Mensagem</label>
+                <textarea id="messageText" rows="4" placeholder="Digite sua mensagem..." required></textarea>
+                <button type="submit">Enviar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para criar trabalho -->
+    <div id="jobModal" class="modal hidden">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Criar Novo Trabalho</h3>
+                <button id="closeJobModal" class="close-button">&times;</button>
+            </div>
+            <form id="jobForm" class="modal-form">
+                <label for="jobTitle">Título do Trabalho</label>
+                <input type="text" id="jobTitle" placeholder="Ex: Desenvolvimento de site e-commerce" required />
+
+                <label for="jobDescription">Descrição Detalhada</label>
+                <textarea id="jobDescription" rows="6" placeholder="Descreva o trabalho, requisitos, prazo, etc." required></textarea>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="jobBudget">Orçamento (R$)</label>
+                        <input type="number" id="jobBudget" min="0" step="0.01" placeholder="2000.00" />
+                    </div>
+                    <div class="form-group">
+                        <label for="jobDeadline">Prazo</label>
+                        <input type="date" id="jobDeadline" />
+                    </div>
+                </div>
+
+                <label for="jobSkills">Skills Necessárias</label>
+                <input type="text" id="jobSkills" placeholder="React, Node.js, PostgreSQL" />
+
+                <button type="submit">Criar Trabalho</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para aplicações ao trabalho -->
+    <div id="applicationsModal" class="modal hidden">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Aplicações ao Trabalho</h3>
+                <button id="closeApplicationsModal" class="close-button">&times;</button>
+            </div>
+            <div id="applicationsList" class="applications-list"></div>
+        </div>
+    </div>
+
+    <script type="module" src="scripts/app-page.js"></script>
+</body>
+</html>

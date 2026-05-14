@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Freelancer</title>
+</head>
+<body>
+    <script>
+        // Definir dados do freelancer no localStorage
+        const userData = {
+            id: 28,
+            name: "Freelancer Teste",
+            email: "freelancer@teste.com",
+            isAdmin: false,
+            accountType: "freelancer",
+            profilePhoto: null
+        };
+
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjgsImVtYWlsIjoiZnJlZWxhbmNlckB0ZXN0ZS5jb20iLCJpYXQiOjE3Nzg3MTY2NDAsImV4cCI6MTc3ODcyMDI0MH0.cgv67tYwoS5UKomzRHq2v47j-lpyH-UFUo_SiM3QP0U";
+
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('authUser', JSON.stringify(userData));
+
+        // Redirecionar para a página de perfil
+        window.location.href = 'http://localhost:8000/profile.html';
+    </script>
+</body>
+</html>

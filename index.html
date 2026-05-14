@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freelance Hub | Acesso</title>
+    <link rel="stylesheet" href="styles/auth.css">
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-card">
+            <header class="auth-header">
+                <h1>Freelance Hub</h1>
+                <p>Escolha seu tipo de acesso e entre na plataforma.</p>
+            </header>
+
+            <p id="feedbackMessage" class="feedback-message" role="status" aria-live="polite"></p>
+
+            <div class="auth-grid">
+                <form id="loginForm" class="form-panel">
+                    <h2>Login</h2>
+
+                    <label for="loginAccountType">Como você está entrando?</label>
+                    <select id="loginAccountType">
+                        <option value="client">Estou buscando freelancer</option>
+                        <option value="freelancer">Sou freelancer</option>
+                    </select>
+
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="voce@email.com" autocomplete="email" />
+
+                    <label for="loginPassword">Senha</label>
+                    <input type="password" id="loginPassword" placeholder="Digite sua senha" autocomplete="current-password" />
+
+                    <button type="submit">Entrar</button>
+                </form>
+
+                <form id="registerForm" class="form-panel">
+                    <h2>Cadastro</h2>
+
+                    <label for="registerAccountType">Tipo de conta</label>
+                    <select id="registerAccountType">
+                        <option value="client">Quero contratar freelancers</option>
+                        <option value="freelancer">Quero ser freelancer</option>
+                    </select>
+
+                    <label for="registerName">Nome</label>
+                    <input type="text" id="registerName" placeholder="Seu nome completo" autocomplete="name" />
+
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" placeholder="voce@email.com" autocomplete="email" />
+
+                    <label for="registerPassword">Senha</label>
+                    <input type="password" id="registerPassword" placeholder="Crie uma senha" autocomplete="new-password" />
+
+                    <button type="submit">Cadastrar</button>
+                </form>
+            </div>
+        </section>
+    </main>
+    <script type="module" src="scripts/auth-page.js"></script>
+</body>
+</html>
