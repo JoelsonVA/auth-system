@@ -4,7 +4,7 @@ const mysql = require("mysql2");
 const connection = mysql.createConnection({
     host: process.env.DB_HOST || "localhost",
     user: process.env.DB_USER || "auth_user",
-    password: process.env.DB_PASSWORD || "123456",
+    password: process.env.DB_PASSWORD || "SuaSenha",
     database: process.env.DB_NAME || "auth_db"
 });
 
@@ -26,6 +26,7 @@ function runSchemaSetup() {
             password VARCHAR(255) NOT NULL,
             is_admin TINYINT(1) NOT NULL DEFAULT 0,
             account_type ENUM('client', 'freelancer') NOT NULL DEFAULT 'client',
+            professional_email VARCHAR(255) NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     `;
@@ -69,6 +70,13 @@ function runSchemaSetup() {
             "profile_photo",
             "MEDIUMTEXT NULL",
             "Erro ao criar coluna profile_photo"
+        );
+
+        ensureColumnExists(
+            "users",
+            "professional_email",
+            "VARCHAR(255) NULL",
+            "Erro ao criar coluna professional_email"
         );
 
         // Criar usuário admin padrão se não existir
