@@ -1,4 +1,23 @@
-node_modules
+node_modules/
 .env
-npm-debug.log
+*.env.local
+npm-debug.log*
 .DS_Store
+
+# Logs and runtime files
+logs/
+*.log
+
+# Build artifacts
+dist/
+build/
+
+# OS and editor
+.vscode/
+.idea/
+
+# Ignore DB dumps and keys
+*.sql
+*.sqlite
+*.pem
+*.key
