@@ -117,6 +117,15 @@ function getApiMessage(error, fallbackMessage) {
   return fallbackMessage;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function setPanelVisibility(isFreelancer, isAdmin) {
   elements.freelancerProfilePanel.classList.toggle("hidden", !isFreelancer);
   elements.adminPanel.classList.toggle("hidden", !isAdmin);
@@ -344,20 +353,34 @@ async function loadMessages() {
 function displayMessages(messages) {
   if (!elements.messagesList) return;
 
+  elements.messagesList.innerHTML = "";
+
   if (!messages || messages.length === 0) {
     elements.messagesList.innerHTML = '<p class="no-messages">Nenhuma mensagem encontrada.</p>';
     return;
   }
 
-  elements.messagesList.innerHTML = messages.map(message => `
-    <div class="message-card ${message.sender_id === currentUser.id ? 'sent' : 'received'}">
-      <div class="message-meta">
-        ${message.sender_id === currentUser.id ? 'Você' : message.sender_name} para ${message.receiver_id === currentUser.id ? 'você' : message.receiver_name}
-        - ${new Date(message.createdAt).toLocaleString()}
-      </div>
-      <p class="message-text">${message.message}</p>
-    </div>
-  `).join('');
+  messages.forEach((message) => {
+    const card = document.createElement("div");
+    card.className = `message-card ${message.sender_id === currentUser.id ? "sent" : "received"}`;
+
+    const meta = document.createElement("div");
+    meta.className = "message-meta";
+    const senderName = message.sender_id === currentUser.id
+      ? "Você"
+      : escapeHtml(message.sender_name || "Remetente");
+    const receiverName = message.receiver_id === currentUser.id
+      ? "você"
+      : escapeHtml(message.receiver_name || "Destinatário");
+    meta.textContent = `${senderName} para ${receiverName} - ${new Date(message.createdAt).toLocaleString()}`;
+
+    const messageText = document.createElement("p");
+    messageText.className = "message-text";
+    messageText.textContent = message.message || "";
+
+    card.append(meta, messageText);
+    elements.messagesList.appendChild(card);
+  });
 }
 
 function openMessageModal(receiverId, receiverName) {
@@ -407,38 +430,96 @@ function displayJobs(jobs) {
     return;
   }
 
-  elements.jobsList.innerHTML = jobs.map(job => `
-    <div class="job-card">
-      <div class="job-header">
-        <h3 class="job-title">${job.title}</h3>
-        <span class="job-meta">${new Date(job.created_at).toLocaleDateString('pt-BR')}</span>
-      </div>
+  elements.jobsList.innerHTML = "";
 
-      <p class="job-meta">Por: ${job.client_name}</p>
+  jobs.forEach((job) => {
+    const card = document.createElement("div");
+    card.className = "job-card";
 
-      <p class="job-description">${job.description}</p>
+    const header = document.createElement("div");
+    header.className = "job-header";
 
-      <div class="job-details">
-        ${job.budget ? `<div class="job-detail"><strong>Orçamento:</strong> R$ ${parseFloat(job.budget).toFixed(2)}</div>` : ''}
-        ${job.deadline ? `<div class="job-detail"><strong>Prazo:</strong> ${new Date(job.deadline).toLocaleDateString('pt-BR')}</div>` : ''}
-        ${job.skills_required ? `<div class="job-detail"><strong>Skills:</strong> ${job.skills_required}</div>` : ''}
-        <div class="job-detail"><strong>Aplicações:</strong> ${job.applications_count || 0}</div>
-      </div>
+    const title = document.createElement("h3");
+    title.className = "job-title";
+    title.textContent = job.title || "Sem título";
 
-      <div class="job-actions">
-        ${currentUser.accountType === 'freelancer' ?
-          `<button class="job-apply-btn ${job.has_applied ? 'disabled' : ''}"
-                   ${job.has_applied ? 'disabled' : ''}
-                   onclick="window.applyToJob(${job.id}, '${job.title}')">
-            ${job.has_applied ? 'Já Aplicou' : 'Aplicar'}
-          </button>` :
-          `<button class="view-applications-btn" onclick="window.viewApplications(${job.id}, '${job.title}')">
-            Ver Aplicações
-          </button>`
-        }
-      </div>
-    </div>
-  `).join('');
+    const meta = document.createElement("span");
+    meta.className = "job-meta";
+    meta.textContent = new Date(job.created_at).toLocaleDateString("pt-BR");
+
+    header.append(title, meta);
+
+    const clientInfo = document.createElement("p");
+    clientInfo.className = "job-meta";
+    clientInfo.textContent = `Por: ${job.client_name || "Cliente"}`;
+
+    const description = document.createElement("p");
+    description.className = "job-description";
+    description.textContent = job.description || "Sem descrição disponível.";
+
+    const details = document.createElement("div");
+    details.className = "job-details";
+
+    if (job.budget) {
+      const budgetDetail = document.createElement("div");
+      budgetDetail.className = "job-detail";
+      const budgetLabel = document.createElement("strong");
+      budgetLabel.textContent = "Orçamento:";
+      budgetDetail.append(budgetLabel, ` R$ ${parseFloat(job.budget).toFixed(2)}`);
+      details.appendChild(budgetDetail);
+    }
+
+    if (job.deadline) {
+      const deadlineDetail = document.createElement("div");
+      deadlineDetail.className = "job-detail";
+      const deadlineLabel = document.createElement("strong");
+      deadlineLabel.textContent = "Prazo:";
+      deadlineDetail.append(deadlineLabel, ` ${new Date(job.deadline).toLocaleDateString("pt-BR")}`);
+      details.appendChild(deadlineDetail);
+    }
+
+    if (job.skills_required) {
+      const skillsDetail = document.createElement("div");
+      skillsDetail.className = "job-detail";
+      const skillsLabel = document.createElement("strong");
+      skillsLabel.textContent = "Skills:";
+      skillsDetail.append(skillsLabel, ` ${escapeHtml(job.skills_required)}`);
+      details.appendChild(skillsDetail);
+    }
+
+    const applicationsDetail = document.createElement("div");
+    applicationsDetail.className = "job-detail";
+    const applicationsLabel = document.createElement("strong");
+    applicationsLabel.textContent = "Aplicações:";
+    applicationsDetail.append(applicationsLabel, ` ${job.applications_count || 0}`);
+    details.appendChild(applicationsDetail);
+
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "job-actions";
+
+    if (currentUser.accountType === "freelancer") {
+      const applyButton = document.createElement("button");
+      applyButton.className = `job-apply-btn ${job.has_applied ? "disabled" : ""}`;
+      applyButton.type = "button";
+      applyButton.textContent = job.has_applied ? "Já Aplicou" : "Aplicar";
+      if (job.has_applied) {
+        applyButton.disabled = true;
+      } else {
+        applyButton.addEventListener("click", () => applyToJob(job.id, job.title));
+      }
+      actionsDiv.appendChild(applyButton);
+    } else {
+      const viewButton = document.createElement("button");
+      viewButton.className = "view-applications-btn";
+      viewButton.type = "button";
+      viewButton.textContent = "Ver Aplicações";
+      viewButton.addEventListener("click", () => viewApplications(job.id, job.title));
+      actionsDiv.appendChild(viewButton);
+    }
+
+    card.append(header, clientInfo, description, details, actionsDiv);
+    elements.jobsList.appendChild(card);
+  });
 }
 
 function updateJobsTitle() {
@@ -510,35 +591,95 @@ function displayApplications(applications, jobId, jobTitle) {
     return;
   }
 
-  elements.applicationsList.innerHTML = applications.map(app => `
-    <div class="application-card">
-      <div class="application-header">
-        <div class="application-freelancer">${app.freelancer_name}</div>
-        <span class="application-status ${app.status}">${app.status}</span>
-      </div>
+  elements.applicationsList.innerHTML = "";
 
-      <div class="application-info">
-        ${app.professional_title ? `<p><strong>Título:</strong> ${app.professional_title}</p>` : ''}
-        ${app.skills ? `<p><strong>Skills:</strong> ${app.skills}</p>` : ''}
-        ${app.hourly_rate ? `<p><strong>Valor/hora:</strong> R$ ${app.hourly_rate}</p>` : ''}
-        <p><strong>Email:</strong> ${app.freelancer_email}</p>
-        <p><strong>Data:</strong> ${new Date(app.created_at).toLocaleString('pt-BR')}</p>
-      </div>
+  applications.forEach((app) => {
+    const card = document.createElement("div");
+    card.className = "application-card";
 
-      ${app.message ? `<div class="application-message">${app.message}</div>` : ''}
+    const headerWrap = document.createElement("div");
+    headerWrap.className = "application-header";
 
-      ${app.status === 'pending' ? `
-        <div class="application-actions">
-          <button class="accept-btn" onclick="window.updateApplicationStatus(${app.id}, 'accepted', ${jobId})">
-            Aceitar
-          </button>
-          <button class="reject-btn" onclick="window.updateApplicationStatus(${app.id}, 'rejected', ${jobId})">
-            Rejeitar
-          </button>
-        </div>
-      ` : ''}
-    </div>
-  `).join('');
+    const freelancerName = document.createElement("div");
+    freelancerName.className = "application-freelancer";
+    freelancerName.textContent = app.freelancer_name || "Freelancer";
+
+    const statusBadge = document.createElement("span");
+    statusBadge.className = "application-status " + app.status;
+    statusBadge.textContent = app.status;
+
+    headerWrap.append(freelancerName, statusBadge);
+
+    const info = document.createElement("div");
+    info.className = "application-info";
+
+    if (app.professional_title) {
+      const title = document.createElement("p");
+      const titleLabel = document.createElement("strong");
+      titleLabel.textContent = "Título:";
+      title.append(titleLabel, ` ${escapeHtml(app.professional_title)}`);
+      info.appendChild(title);
+    }
+
+    if (app.skills) {
+      const skills = document.createElement("p");
+      const skillsLabel = document.createElement("strong");
+      skillsLabel.textContent = "Skills:";
+      skills.append(skillsLabel, ` ${escapeHtml(app.skills)}`);
+      info.appendChild(skills);
+    }
+
+    if (app.hourly_rate) {
+      const hourly = document.createElement("p");
+      const hourlyLabel = document.createElement("strong");
+      hourlyLabel.textContent = "Valor/hora:";
+      hourly.append(hourlyLabel, ` R$ ${app.hourly_rate}`);
+      info.appendChild(hourly);
+    }
+
+    const email = document.createElement("p");
+    const emailLabel = document.createElement("strong");
+    emailLabel.textContent = "Email:";
+    email.append(emailLabel, ` ${escapeHtml(app.freelancer_email || "")}`);
+    info.appendChild(email);
+
+    const date = document.createElement("p");
+    const dateLabel = document.createElement("strong");
+    dateLabel.textContent = "Data:";
+    date.append(dateLabel, ` ${new Date(app.created_at).toLocaleDateString("pt-BR")}`);
+    info.appendChild(date);
+
+    card.append(headerWrap, info);
+
+    if (app.message) {
+      const messageBlock = document.createElement("div");
+      messageBlock.className = "application-message";
+      messageBlock.textContent = app.message;
+      card.appendChild(messageBlock);
+    }
+
+    if (app.status === "pending") {
+      const actions = document.createElement("div");
+      actions.className = "application-actions";
+
+      const acceptBtn = document.createElement("button");
+      acceptBtn.className = "accept-btn";
+      acceptBtn.type = "button";
+      acceptBtn.textContent = "Aceitar";
+      acceptBtn.addEventListener("click", () => updateApplicationStatus(app.id, "accepted", jobId));
+
+      const rejectBtn = document.createElement("button");
+      rejectBtn.className = "reject-btn";
+      rejectBtn.type = "button";
+      rejectBtn.textContent = "Rejeitar";
+      rejectBtn.addEventListener("click", () => updateApplicationStatus(app.id, "rejected", jobId));
+
+      actions.append(acceptBtn, rejectBtn);
+      card.appendChild(actions);
+    }
+
+    elements.applicationsList.appendChild(card);
+  });
 }
 
 function closeApplicationsModal() {
@@ -620,7 +761,12 @@ function displayAccountStatus(status) {
     }
   }
 
-  elements.accountStatus.innerHTML = `<p><strong>Status:</strong> ${statusText}</p>`;
+  const statusParagraph = document.createElement("p");
+  const statusStrong = document.createElement("strong");
+  statusStrong.textContent = "Status:";
+  statusParagraph.append(statusStrong, ` ${statusText}`);
+  elements.accountStatus.innerHTML = "";
+  elements.accountStatus.appendChild(statusParagraph);
 }
 
 async function handleMessageSubmit(event) {

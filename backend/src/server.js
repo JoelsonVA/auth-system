@@ -7,8 +7,16 @@ const authRoutes = require("./routes/authRoutes");
 const marketplaceRoutes = require("./routes/marketplaceRoutes");
 const connection = require("./config/db");
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8000";
+
 const corsOptions = {
-    origin: "*",
+    origin: (origin, callback) => {
+        if (!origin || origin === FRONTEND_URL) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error("CORS policy: origin not allowed"));
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
 };

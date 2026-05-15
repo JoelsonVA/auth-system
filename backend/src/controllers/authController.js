@@ -2,7 +2,10 @@ const connection = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const SECRET = process.env.JWT_SECRET || "change_this_secret";
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+    throw new Error("JWT_SECRET environment variable is required");
+}
 const ACCOUNT_TYPES = ["client", "freelancer"];
 
 function isValidEmail(email) {
