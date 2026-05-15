@@ -1,38 +1,31 @@
 # Freelance Hub
 
-Freelance Hub é uma plataforma SaaS para conectar contratantes e freelancers. O sistema oferece autenticação segura, perfis profissionais, busca por habilidades, gerenciamento de trabalhos (jobs) e um painel administrativo para monitoramento e gestão de usuários.
+Freelance Hub é um projeto para conectar clientes e freelancers em um só lugar. Ele reúne login, perfis profissionais, buscas por habilidades, publicação de jobs, candidaturas, mensagens e notificações.
 
-**Principais benefícios:**
-- Acesso rápido para contratar ou oferecer serviços
-- Perfil freelancer com campos profissionais (contato, skills, portfólio)
-- Sistema de mensagens e notificações para interações em tempo próximo
-- Painel administrativo para auditoria e controle de acesso
+## O que o projeto faz
+- Cadastro e autenticação de usuários
+- Perfis de freelancer com título, skills, portfólio e valor/hora
+- Busca por profissionais
+- Criação de jobs e candidatura de freelancers
+- Envio de mensagens entre usuários
+- Painel administrativo para gestão básica
 
-**Tecnologias:**
-- Frontend: HTML5, CSS3, JavaScript (módulos ES6)
-- Backend: Node.js, Express
-- Banco de dados: MySQL (utilizando `mysql2` no backend)
-- Autenticação: JWT (JSON Web Tokens)
-- Estrutura: arquitetura RESTful para APIs
+## Tecnologias usadas
+- Frontend: HTML, CSS e JavaScript (ES6 modules)
+- Backend: Node.js e Express
+- Banco de dados: MySQL com `mysql2`
+- Autenticação: JWT
+- API: arquitetura REST
 
-## Estrutura do repositório
-- `index.html` — página de Login / Cadastro
-- `app.html` — painel principal da aplicação (dashboard)
-- `scripts/` — lógica do cliente (API client, páginas JS)
-- `styles/` — arquivos CSS do projeto
-- `backend/src/` — código do servidor Express, rotas e controladores
-- `backend/.env` — variáveis de ambiente (não versionar em repositórios públicos)
+## Estrutura do projeto
+- `index.html` — tela de login e cadastro
+- `app.html` — painel principal da aplicação
+- `scripts/` — scripts do frontend
+- `styles/` — estilos CSS
+- `backend/src/` — código do backend (rotas, controladores, middleware)
+- `backend/.env` — variáveis de ambiente (não versionar)
 
-## Funcionalidades principais
-- Autenticação e registro com tipagem de conta (`client` ou `freelancer`)
-- Dashboard com sessão do usuário (`/dashboard`)
-- CRUD de perfil freelancer e endpoint para busca de profissionais
-- Envio e recebimento de mensagens entre usuários
-- Criação e candidatura a trabalhos (jobs)
-- Notificações para mensagens, propostas e novos trabalhos
-- Auditoria de acessos por meio de eventos de login
-
-## Instalação (desenvolvimento)
+## Como rodar localmente
 1. Clone o repositório:
 
 ```bash
@@ -40,77 +33,72 @@ git clone <repo-url>
 cd auth
 ```
 
-2. Backend: instale dependências e configure variáveis de ambiente
+2. Vá para o backend, instale dependências e configure o `.env`:
 
 ```bash
 cd backend
 npm install
 ```
 
-Crie um arquivo `.env` em `backend/` com as seguintes variáveis mínimas:
+Exemplo de `.env`:
 
-```
+```env
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=freelancehub_user
-DB_PASSWORD=REDACTED_PASSWORD
+DB_PASSWORD=SUA_SENHA_AQUI
 DB_NAME=freelancehub
 JWT_SECRET=uma_chave_secreta
 PORT=3000
 ```
 
-3. Inicie o servidor backend:
+3. Inicie o backend:
 
 ```bash
-cd backend
 npm start
 ```
 
-4. Sirva os arquivos estáticos (frontend) a partir da raiz do projeto — por exemplo usando um servidor simples:
+4. Abra o frontend em `index.html`. Se quiser, rode um servidor simples na raiz do projeto:
 
 ```bash
+cd ..
 python3 -m http.server 8000
-# então acesse http://localhost:8000/index.html
 ```
 
-## Banco de dados
-O servidor inicializa as tabelas essenciais automaticamente (usuários, perfis freelancers, mensagens, jobs, aplicações, notificações e eventos de login). Garanta que o usuário e o banco configurados em `.env` existam e tenham permissões apropriadas.
+Então acesse `http://localhost:8000/index.html`.
 
-Se preferir criar o banco manualmente no MySQL:
+## Configuração do MySQL
+O backend cria as tabelas necessárias automaticamente. Antes disso, verifique se o banco e o usuário existem.
+
+Exemplo de criação no MySQL:
 
 ```sql
 CREATE DATABASE freelancehub CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-CREATE USER 'freelancehub_user'@'localhost' IDENTIFIED BY 'REDACTED_PASSWORD';
+CREATE USER 'freelancehub_user'@'localhost' IDENTIFIED BY 'SUA_SENHA_AQUI';
 GRANT ALL PRIVILEGES ON freelancehub.* TO 'freelancehub_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-## Endpoints relevantes (resumo)
-- `POST /auth/register` — registrar novo usuário
-- `POST /auth/login` — autenticar e receber JWT
-- `GET /dashboard` — obter dados da sessão autenticada
+## Endpoints principais
+- `POST /auth/register` — registrar usuário
+- `POST /auth/login` — fazer login
+- `GET /dashboard` — dados da sessão
 - `GET /marketplace/freelancers` — buscar freelancers
-- `GET|PUT /marketplace/me/freelancer-profile` — ler/atualizar perfil freelancer
+- `GET /marketplace/me/freelancer-profile` — ver perfil do freelancer
+- `PUT /marketplace/me/freelancer-profile` — atualizar perfil do freelancer
 - `POST /marketplace/messages` — enviar mensagem
 - `POST /marketplace/jobs` — criar job
-- `POST /marketplace/jobs/apply` — candidatar-se a job
-- `/notifications` — CRUD de notificações (implementado no backend)
+- `POST /marketplace/jobs/apply` — aplicar para job
+- `GET /marketplace/jobs/:jobId/applications` — ver aplicações de um job
+- `PUT /marketplace/jobs/applications/status` — atualizar status da aplicação
 
-Consulte o código em `backend/src/` para detalhes adicionais das rotas e payloads.
+Para mais detalhes, veja o código em `backend/src/`.
 
-## Como contribuir
-- Abra issues para bugs ou melhorias
-- Crie branches com nomes claros (`feature/...`, `fix/...`) e envie pull requests
-- Mantenha os commits pequenos e descritivos
+## Contribuindo
+- Abra issues para bugs ou sugestões
+- Faça branches com nomes claros como `feature/...` ou `fix/...`
+- Envie pull requests com mudanças pequenas e organizadas
 
 ## Licença
-Coloque aqui a licença do projeto (ex.: MIT) ou remover esta seção se não aplicável.
 
----
-
-Se quiser, eu posso também:
-- Adicionar exemplos de requests curl para os endpoints mais usados
-- Gerar um arquivo `POSTMAN`/`HTTP` com coleções de teste
-- Ajustar o README para inglês ou múltiplos idiomas
-
-Arquivo atualizado: [README.md](README.md)
+Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
