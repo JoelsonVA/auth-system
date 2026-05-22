@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const authMiddleware = require("../middlewares/authMiddleware");
+const premiumMiddleware = require("../middlewares/premiumMiddleware");
 const marketplaceController = require("../controllers/marketplaceController");
 const jobController = require("../controllers/jobController");
 const userController = require("../controllers/userController");
@@ -15,8 +16,13 @@ router.get("/me/freelancer-profile", authMiddleware, marketplaceController.getMy
 router.put("/me/freelancer-profile", authMiddleware, marketplaceController.upsertMyFreelancerProfile);
 
 // Messages routes
-router.post("/messages", authMiddleware, marketplaceController.sendMessage);
-router.get("/messages", authMiddleware, marketplaceController.getMessages);
+router.post(
+    "/messages",
+    authMiddleware,
+    premiumMiddleware,
+    marketplaceController.sendMessage
+);
+router.get("/messages", authMiddleware, premiumMiddleware, marketplaceController.getMessages);
 
 // Jobs routes
 router.post("/jobs", authMiddleware, jobController.createJob);
@@ -24,6 +30,7 @@ router.get("/jobs", authMiddleware, jobController.getJobs);
 router.post("/jobs/apply", authMiddleware, jobController.applyToJob);
 router.get("/jobs/:jobId/applications", authMiddleware, jobController.getJobApplications);
 router.put("/jobs/applications/status", authMiddleware, jobController.updateApplicationStatus);
+router.put("/jobs/:jobId/complete", authMiddleware, jobController.completeJob);
 
 // User management routes
 router.post("/account/deactivate", authMiddleware, userController.deactivateAccount);
@@ -34,14 +41,10 @@ router.post("/users/profile", authMiddleware, userController.updateProfile);
 
 // Notifications routes
 router.get("/notifications", authMiddleware, notificationController.getNotifications);
-router.put("/notifications/:notificationId/read", authMiddleware, notificationController.markAsRead);
-router.put("/notifications/read-all", authMiddleware, notificationController.markAllAsRead);
-router.delete("/notifications/:notificationId", authMiddleware, notificationController.deleteNotification);
 router.get("/notifications/unread-count", authMiddleware, notificationController.getUnreadCount);
-
-// Notification routes
-router.get("/notifications", authMiddleware, notificationController.getNotifications);
+router.put("/notifications/:notificationId/read", authMiddleware, notificationController.markAsRead);
 router.patch("/notifications/:notificationId/read", authMiddleware, notificationController.markAsRead);
+router.put("/notifications/read-all", authMiddleware, notificationController.markAllAsRead);
 router.patch("/notifications/read-all", authMiddleware, notificationController.markAllAsRead);
 router.delete("/notifications/:notificationId", authMiddleware, notificationController.deleteNotification);
 

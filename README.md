@@ -58,14 +58,39 @@ PORT=3000
 npm start
 ```
 
-4. Abra o frontend em `index.html`. Se quiser, rode um servidor simples na raiz do projeto:
+4. Abra a aplicação no navegador:
+
+- `http://localhost:3000/` (login/cadastro)
+- `http://localhost:3000/app` (plataforma)
+
+## Colocar no ar (deploy)
+Recomendação prática:
+- **Frontend (HTML/CSS/JS)**: hospede estático (Netlify/Vercel/Cloudflare Pages).
+- **Backend (Node + MySQL)**: Render/Fly.io/Railway/VM, com variáveis de ambiente.
+- **Banco (MySQL)**: serviço gerenciado (PlanetScale não é MySQL “puro”; prefira RDS/Aiven/Render/Railway) ou container.
+
+### Railway (tudo em 1 domínio)
+Este projeto está preparado para rodar **frontend + backend** no mesmo serviço (o backend serve os arquivos do frontend).
+
+1. Crie um serviço no Railway apontando para este repositório (raiz).
+2. Crie um **MySQL** no Railway no mesmo projeto.
+3. Configure as variáveis de ambiente do serviço (use `backend/.env.example` como base).
+4. Rotas do site:
+   - `/` (login/cadastro)
+   - `/app` (plataforma)
+   - `/profile` (perfil)
+
+### Subir com Docker (rápido)
+Na raiz do projeto:
 
 ```bash
-cd ..
-python3 -m http.server 8000
+docker compose up --build
 ```
 
-Então acesse `http://localhost:8000/index.html`.
+App (frontend + backend): `http://localhost:3000/`
+
+### Variáveis de ambiente
+Use `backend/.env.example` como base (não versionar segredos).
 
 ## Configuração do MySQL
 O backend cria as tabelas necessárias automaticamente. Antes disso, verifique se o banco e o usuário existem.
@@ -93,6 +118,35 @@ FLUSH PRIVILEGES;
 - `PUT /marketplace/jobs/applications/status` — atualizar status da aplicação
 
 Para mais detalhes, veja o código em `backend/src/`.
+
+## Premium (assinatura)
+O backend já tem endpoints para **assinar Premium via Stripe** e middleware que bloqueia rotas Premium.
+
+- `POST /billing/checkout-session` (auth) → body `{ "planType": "freelancer" | "client" }` e retorna `{ url }` do Stripe Checkout
+- `POST /billing/portal` (auth) → retorna `{ url }` do Portal do Stripe
+- `POST /billing/webhook` (Stripe) → mantém status da assinatura no banco
+- `GET /billing/status` (auth) → retorna status premium por tipo (freelancer/client)
+
+Configuração necessária no `.env` do backend:
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_ID_FREELANCER`
+- `STRIPE_PRICE_ID_CLIENT`
+- `STRIPE_SUCCESS_URL` / `STRIPE_CANCEL_URL` / `STRIPE_PORTAL_RETURN_URL`
+
+Rotas atualmente marcadas como Premium:
+- Mensagens: `POST /marketplace/messages` e `GET /marketplace/messages`
+
+Regras Premium implementadas:
+- **Freelancer Premium** recebe notificação de novo job imediatamente; usuário comum recebe com atraso (padrão: 24h).
+- **Cliente Premium** tem jobs com destaque na listagem para freelancers (boost de ordenação).
+- **Freelancer comum** tem limite de trabalhos em andamento (padrão: 3); freelancer Premium não tem limite.
+- **Cliente** pode concluir trabalho em andamento (marca `completed`).
+
+Variáveis:
+- `PREMIUM_FREELANCER_NOTIFICATION_DELAY_HOURS` (padrão: 24)
+- `JOB_PREMIUM_BOOST_HOURS` (padrão: 24)
+- `FREELANCER_MAX_CONCURRENT_JOBS` (padrão: 3)
 
 ## Contribuindo
 - Abra issues para bugs ou sugestões

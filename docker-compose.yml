@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: freelancehub
+      MYSQL_USER: freelancehub_user
+      MYSQL_PASSWORD: freelancehub_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: freelancehub_user
+      DB_PASSWORD: freelancehub_pass
+      DB_NAME: freelancehub
+      JWT_SECRET: change_me
+      PORT: 3000
+      FRONTEND_URL: http://localhost:3000
+      # Stripe: configure no seu deploy (.env / secrets)
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_ID_FREELANCER: ${STRIPE_PRICE_ID_FREELANCER:-}
+      STRIPE_PRICE_ID_CLIENT: ${STRIPE_PRICE_ID_CLIENT:-}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:3000/app?billing=success}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:3000/app?billing=cancel}
+      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-http://localhost:3000/app}
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:

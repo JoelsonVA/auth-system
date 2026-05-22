@@ -18,6 +18,10 @@ import {
   reactivateAccount,
   deleteAccount as apiDeleteAccount,
   getAccountStatus,
+  completeJob as apiCompleteJob,
+  fetchBillingStatus,
+  createCheckoutSession,
+  createBillingPortalSession,
 } from "./api-client.js";
 import {
   getNotifications,
@@ -79,11 +83,15 @@ const elements = {
   notificationsList: document.getElementById("notificationsList"),
   notificationBadge: document.getElementById("notificationBadge"),
   markAllRead: document.getElementById("markAllRead"),
+  premiumStatusText: document.getElementById("premiumStatusText"),
+  premiumSubscribeButton: document.getElementById("premiumSubscribeButton"),
+  premiumManageButton: document.getElementById("premiumManageButton"),
 };
 
 let currentUser = null;
 let currentMessageReceiver = null;
 let notificationRefreshInterval = null;
+let billingStatus = null;
 
 const accountTypeLabels = {
   client: "Cliente",
@@ -115,6 +123,78 @@ function getApiMessage(error, fallbackMessage) {
   }
 
   return fallbackMessage;
+}
+
+function shouldOfferPremiumUpgrade(error) {
+  return (
+    error instanceof ApiError &&
+    error.status === 402 &&
+    error.data?.code === "PREMIUM_REQUIRED"
+  );
+}
+
+function isFreelancerConcurrentLimit(error) {
+  return (
+    error instanceof ApiError &&
+    error.status === 402 &&
+    error.data?.code === "FREELANCER_CONCURRENT_LIMIT"
+  );
+}
+
+async function startPremiumCheckout(planType) {
+  try {
+    const response = await createCheckoutSession(getToken(), { planType });
+    if (response?.url) {
+      window.location.href = response.url;
+      return;
+    }
+    showFeedback("Não foi possível iniciar o checkout.", "error");
+  } catch (error) {
+    console.error("Erro ao iniciar checkout:", error);
+    showFeedback(getApiMessage(error, "Erro ao iniciar checkout"), "error");
+  }
+}
+
+async function openBillingPortal() {
+  try {
+    const response = await createBillingPortalSession(getToken());
+    if (response?.url) {
+      window.location.href = response.url;
+      return;
+    }
+    showFeedback("Não foi possível abrir o portal.", "error");
+  } catch (error) {
+    console.error("Erro ao abrir portal:", error);
+    showFeedback(getApiMessage(error, "Erro ao abrir portal"), "error");
+  }
+}
+
+async function loadBillingStatus() {
+  if (!elements.premiumStatusText) return;
+
+  try {
+    billingStatus = await fetchBillingStatus(getToken());
+  } catch (error) {
+    console.error("Erro ao carregar status premium:", error);
+    billingStatus = null;
+  }
+
+  const planType = currentUser?.accountType === "freelancer" ? "freelancer" : "client";
+  const isPremium = Boolean(billingStatus?.[planType]?.isPremium);
+
+  elements.premiumStatusText.textContent = isPremium
+    ? "Premium ativo"
+    : "Premium desativado";
+
+  if (elements.premiumSubscribeButton) {
+    elements.premiumSubscribeButton.textContent = isPremium ? "Upgrade Premium" : "Assinar Premium";
+    elements.premiumSubscribeButton.onclick = () => startPremiumCheckout(planType);
+  }
+
+  if (elements.premiumManageButton) {
+    elements.premiumManageButton.disabled = !isPremium;
+    elements.premiumManageButton.onclick = () => openBillingPortal();
+  }
 }
 
 function escapeHtml(value) {
@@ -336,6 +416,15 @@ async function sendMessage(receiverId, message) {
     await loadMessages();
   } catch (error) {
     console.error("Erro ao enviar mensagem:", error);
+    if (shouldOfferPremiumUpgrade(error)) {
+      const proceed = confirm(
+        "Mensagens são um recurso Premium. Deseja assinar agora?"
+      );
+      if (proceed) {
+        await startPremiumCheckout(currentUser?.accountType || "client");
+      }
+      return;
+    }
     showFeedback(getApiMessage(error, "Erro ao enviar mensagem"), "error");
   }
 }
@@ -346,6 +435,11 @@ async function loadMessages() {
     displayMessages(response.messages || []);
   } catch (error) {
     console.error("Erro ao carregar mensagens:", error);
+    if (shouldOfferPremiumUpgrade(error)) {
+      showFeedback("Mensagens disponíveis apenas para Premium.", "error");
+      displayMessages([]);
+      return;
+    }
     showFeedback(getApiMessage(error, "Erro ao carregar mensagens"), "error");
   }
 }
@@ -515,6 +609,15 @@ function displayJobs(jobs) {
       viewButton.textContent = "Ver Aplicações";
       viewButton.addEventListener("click", () => viewApplications(job.id, job.title));
       actionsDiv.appendChild(viewButton);
+
+      if (job.status === "in_progress") {
+        const completeButton = document.createElement("button");
+        completeButton.className = "accept-btn";
+        completeButton.type = "button";
+        completeButton.textContent = "Concluir";
+        completeButton.addEventListener("click", () => completeJob(job.id, job.title));
+        actionsDiv.appendChild(completeButton);
+      }
     }
 
     card.append(header, clientInfo, description, details, actionsDiv);
@@ -564,6 +667,21 @@ async function applyToJob(jobId, jobTitle) {
   } catch (error) {
     console.error("Erro ao aplicar para trabalho:", error);
     showFeedback(getApiMessage(error, "Erro ao aplicar para trabalho"), "error");
+  }
+}
+
+async function completeJob(jobId, jobTitle) {
+  if (!confirm(`Concluir o trabalho "${jobTitle}"?`)) {
+    return;
+  }
+
+  try {
+    await apiCompleteJob(getToken(), jobId);
+    showFeedback("Trabalho concluído com sucesso!", "success");
+    await loadJobs();
+  } catch (error) {
+    console.error("Erro ao concluir trabalho:", error);
+    showFeedback(getApiMessage(error, "Erro ao concluir trabalho"), "error");
   }
 }
 
@@ -694,6 +812,10 @@ async function updateApplicationStatus(applicationId, status, jobId) {
     await viewApplications(jobId, jobTitle);
   } catch (error) {
     console.error("Erro ao atualizar aplicação:", error);
+    if (isFreelancerConcurrentLimit(error)) {
+      showFeedback(getApiMessage(error, "Freelancer atingiu o limite de trabalhos."), "error");
+      return;
+    }
     showFeedback(getApiMessage(error, "Erro ao atualizar aplicação"), "error");
   }
 }
@@ -800,6 +922,7 @@ async function refreshAllData() {
   await loadMessages();
   await loadJobs();
   await loadAccountStatus();
+  await loadBillingStatus();
   
   showFeedback("Dados atualizados com sucesso!", "success");
 }
@@ -852,6 +975,17 @@ function bindEvents() {
   // Account events
   elements.deactivateAccountButton.addEventListener("click", deactivateAccount);
   elements.deleteAccountButton.addEventListener("click", deleteAccount);
+
+  if (elements.premiumSubscribeButton) {
+    elements.premiumSubscribeButton.addEventListener("click", () => {
+      const planType = currentUser?.accountType || "client";
+      startPremiumCheckout(planType);
+    });
+  }
+
+  if (elements.premiumManageButton) {
+    elements.premiumManageButton.addEventListener("click", openBillingPortal);
+  }
 }
 
 // Global functions for onclick handlers

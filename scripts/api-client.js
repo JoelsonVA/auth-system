@@ -190,6 +190,15 @@ export async function updateApplicationStatus(token, payload) {
   });
 }
 
+export async function completeJob(token, jobId) {
+  return sendRequest(`/marketplace/jobs/${jobId}/complete`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export async function deactivateAccount(token, days = 180) {
   return sendRequest("/marketplace/account/deactivate", {
     method: "POST",
@@ -236,5 +245,34 @@ export async function updateProfile(token, payload) {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchBillingStatus(token) {
+  return sendRequest("/billing/status", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function createCheckoutSession(token, payload) {
+  return sendRequest("/billing/checkout-session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createBillingPortalSession(token) {
+  return sendRequest("/billing/portal", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 }

@@ -18,9 +18,9 @@ exports.getNotifications = async (req, res) => {
 
     try {
         const sql = `
-            SELECT id, type, title, content, related_id, related_user_id, is_read, created_at
+            SELECT id, type, title, content, related_id, related_user_id, is_read, created_at, available_at
             FROM notifications
-            WHERE user_id = ?
+            WHERE user_id = ? AND available_at <= NOW()
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?
         `;
@@ -28,7 +28,8 @@ exports.getNotifications = async (req, res) => {
         const notifications = await query(sql, [userId, parseInt(limit), parseInt(offset)]);
 
         // Contar não lidas
-        const countSql = "SELECT COUNT(*) as unread FROM notifications WHERE user_id = ? AND is_read = 0";
+        const countSql =
+            "SELECT COUNT(*) as unread FROM notifications WHERE user_id = ? AND is_read = 0 AND available_at <= NOW()";
         const countResult = await query(countSql, [userId]);
 
         return res.json({
@@ -128,18 +129,50 @@ exports.createNotification = async (userId, type, title, content, relatedId = nu
 // Função para notificar todos os usuários (para trabalhos novos)
 exports.notifyAllUsers = async (type, title, content, relatedId = null) => {
     try {
-        const usersSql = "SELECT id FROM users WHERE account_type = 'freelancer'";
-        const users = await query(usersSql, []);
+        const delayHours = Number(process.env.PREMIUM_FREELANCER_NOTIFICATION_DELAY_HOURS) || 24;
+        const freelancerPriceId = process.env.STRIPE_PRICE_ID_FREELANCER;
+
+        const usersSql = `
+            SELECT
+                u.id,
+                CASE
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM billing_subscriptions bs
+                        WHERE bs.user_id = u.id
+                          AND bs.price_id = ?
+                          AND bs.status IN ('active', 'trialing')
+                          AND (bs.current_period_end IS NULL OR bs.current_period_end >= NOW())
+                    )
+                    THEN 1 ELSE 0
+                END AS is_premium
+            FROM users u
+            WHERE u.account_type = 'freelancer'
+        `;
+        const users = await query(usersSql, [freelancerPriceId]);
 
         for (const user of users) {
-            await exports.createNotification(
+            const normalizedDelayHours = Number.isFinite(delayHours) ? Math.max(delayHours, 0) : 24;
+            const availableAt = user.is_premium
+                ? new Date()
+                : new Date(Date.now() + normalizedDelayHours * 60 * 60 * 1000);
+
+            const insertSql = `
+                INSERT INTO notifications
+                    (user_id, type, title, content, related_id, related_user_id, available_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            await query(insertSql, [
                 user.id,
                 type,
                 title,
                 content,
                 relatedId,
                 null
-            );
+                ,
+                availableAt
+            ]);
         }
     } catch (error) {
         console.error("Erro ao notificar todos os usuários:", error);
@@ -153,7 +186,7 @@ exports.getUnreadCount = async (req, res) => {
         const sql = `
             SELECT COUNT(*) as count
             FROM notifications
-            WHERE user_id = ? AND is_read = FALSE
+            WHERE user_id = ? AND is_read = FALSE AND available_at <= NOW()
         `;
 
         const result = await query(sql, [userId]);

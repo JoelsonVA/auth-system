@@ -158,33 +158,49 @@ function runSchemaSetup() {
         }
     });
 
-    const createJobsSql = `
-        CREATE TABLE IF NOT EXISTS jobs (
-            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            client_id INT NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            description TEXT NOT NULL,
-            budget DECIMAL(10,2) NULL,
-            skills_required VARCHAR(500) NULL,
-            deadline DATE NULL,
-            status ENUM('open', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'open',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_jobs_client (client_id),
-            INDEX idx_jobs_status (status),
-            INDEX idx_jobs_created_at (created_at),
-            CONSTRAINT fk_jobs_client
-                FOREIGN KEY (client_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE
-        )
-    `;
+        const createJobsSql = `
+            CREATE TABLE IF NOT EXISTS jobs (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                client_id INT NOT NULL,
+                assigned_freelancer_id INT NULL,
+                title VARCHAR(255) NOT NULL,
+                description TEXT NOT NULL,
+                budget DECIMAL(10,2) NULL,
+                skills_required VARCHAR(500) NULL,
+                deadline DATE NULL,
+                status ENUM('open', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'open',
+                completed_at DATETIME NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_jobs_client (client_id),
+                INDEX idx_jobs_status (status),
+                INDEX idx_jobs_created_at (created_at),
+                CONSTRAINT fk_jobs_client
+                    FOREIGN KEY (client_id)
+                    REFERENCES users(id)
+                    ON DELETE CASCADE
+            )
+        `;
 
     connection.query(createJobsSql, (jobsErr) => {
         if (jobsErr) {
             console.log("Erro ao criar tabela jobs:", jobsErr);
         }
     });
+
+    ensureColumnExists(
+        "jobs",
+        "assigned_freelancer_id",
+        "INT NULL",
+        "Erro ao criar coluna assigned_freelancer_id em jobs"
+    );
+
+    ensureColumnExists(
+        "jobs",
+        "completed_at",
+        "DATETIME NULL",
+        "Erro ao criar coluna completed_at em jobs"
+    );
 
     const createJobApplicationsSql = `
         CREATE TABLE IF NOT EXISTS job_applications (
@@ -241,6 +257,61 @@ function runSchemaSetup() {
     connection.query(createNotificationsSql, (notificationsErr) => {
         if (notificationsErr) {
             console.log("Erro ao criar tabela notifications:", notificationsErr);
+        }
+    });
+
+    ensureColumnExists(
+        "notifications",
+        "available_at",
+        "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+        "Erro ao criar coluna available_at em notifications"
+    );
+
+    const createBillingCustomersSql = `
+        CREATE TABLE IF NOT EXISTS billing_customers (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL UNIQUE,
+            stripe_customer_id VARCHAR(64) NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_billing_customers_user
+                FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+    `;
+
+    connection.query(createBillingCustomersSql, (billingCustomersErr) => {
+        if (billingCustomersErr) {
+            console.log("Erro ao criar tabela billing_customers:", billingCustomersErr);
+        }
+    });
+
+    const createBillingSubscriptionsSql = `
+        CREATE TABLE IF NOT EXISTS billing_subscriptions (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            stripe_subscription_id VARCHAR(64) NOT NULL UNIQUE,
+            status VARCHAR(32) NOT NULL,
+            current_period_end DATETIME NULL,
+            price_id VARCHAR(64) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_billing_subscriptions_user (user_id),
+            INDEX idx_billing_subscriptions_status (status),
+            INDEX idx_billing_subscriptions_period_end (current_period_end),
+            CONSTRAINT fk_billing_subscriptions_user
+                FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+    `;
+
+    connection.query(createBillingSubscriptionsSql, (billingSubscriptionsErr) => {
+        if (billingSubscriptionsErr) {
+            console.log(
+                "Erro ao criar tabela billing_subscriptions:",
+                billingSubscriptionsErr
+            );
         }
     });
 }

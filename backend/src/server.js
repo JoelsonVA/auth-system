@@ -1,17 +1,29 @@
 require("dotenv").config();
 const cors = require("cors");
 const express = require("express");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const path = require("path");
 const app = express();
 const authMiddleware = require("./middlewares/authMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const marketplaceRoutes = require("./routes/marketplaceRoutes");
+const billingRoutes = require("./routes/billingRoutes");
+const billingController = require("./controllers/billingController");
 const connection = require("./config/db");
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8000";
+const PORT = Number(process.env.PORT) || 3000;
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const FRONTEND_URLS = (process.env.FRONTEND_URLS || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+const allowedOrigins = new Set([FRONTEND_URL, ...FRONTEND_URLS]);
 
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || origin === FRONTEND_URL) {
+        if (!origin || allowedOrigins.has(origin)) {
             callback(null, true);
             return;
         }
@@ -21,13 +33,55 @@ const corsOptions = {
     allowedHeaders: ["Content-Type", "Authorization"],
 };
 
+app.set("trust proxy", 1);
+app.use(helmet());
+app.use(
+    rateLimit({
+        windowMs: 15 * 60 * 1000,
+        limit: 300,
+        standardHeaders: "draft-7",
+        legacyHeaders: false
+    })
+);
+
+// Stripe webhook precisa do corpo bruto para validação da assinatura.
+app.post(
+    "/billing/webhook",
+    express.raw({ type: "application/json" }),
+    billingController.webhook
+);
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cors(corsOptions));
 
+app.get("/health", (req, res) => {
+    res.json({ ok: true });
+});
+
+// Servir o frontend estático junto com a API (1 domínio).
+const WEB_ROOT = path.resolve(__dirname, "..", "..");
+
+app.use("/styles", express.static(path.join(WEB_ROOT, "styles")));
+app.use("/scripts", express.static(path.join(WEB_ROOT, "scripts")));
+app.use("/favicon.ico", express.static(path.join(WEB_ROOT, "favicon.ico")));
+app.use("/img.jpg", express.static(path.join(WEB_ROOT, "img.jpg")));
+app.use("/Demo.png", express.static(path.join(WEB_ROOT, "Demo.png")));
 
 app.get("/", (req, res) => {
-    res.send("API rodando!");
+    res.sendFile(path.join(WEB_ROOT, "index.html"));
+});
+
+app.get("/app", (req, res) => {
+    res.sendFile(path.join(WEB_ROOT, "app.html"));
+});
+
+app.get("/profile", (req, res) => {
+    res.sendFile(path.join(WEB_ROOT, "profile.html"));
+});
+
+app.get("/login-freelancer", (req, res) => {
+    res.sendFile(path.join(WEB_ROOT, "login-freelancer.html"));
 });
 
 
@@ -70,7 +124,8 @@ app.get("/dashboard", authMiddleware,(req, res)=>{
 
 app.use("/auth", authRoutes);
 app.use("/marketplace", marketplaceRoutes);
+app.use("/billing", billingRoutes);
 
-app.listen(3000, () => {
-    console.log("Servidor rodando na porta 3000");
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });

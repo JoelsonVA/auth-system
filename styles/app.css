@@ -647,6 +647,33 @@ label {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
+.premium-panel {
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+
+.premium-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.premium-status {
+    margin: 6px 0 0;
+    color: #475569;
+}
+
+.premium-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .account-actions {
     display: flex;
     gap: 12px;
@@ -918,4 +945,3 @@ label {
         width: 100%;
     }
 }
-

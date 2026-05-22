@@ -1,0 +1,9 @@
+[build]
+builder = "RAILPACK"
+buildCommand = "npm --prefix backend ci --omit=dev"
+
+[deploy]
+startCommand = "node backend/src/server.js"
+healthcheckPath = "/health"
+restartPolicyType = "ON_FAILURE"
+
