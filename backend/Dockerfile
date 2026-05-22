@@ -10,10 +10,13 @@ RUN npm --prefix backend ci --omit=dev
 COPY backend/src ./backend/src
 
 # Frontend (servido pelo Express)
-COPY index.html app.html profile.html login-freelancer.html ./
+# Copy all HTML files from root
+COPY *.html ./
+
+# Copy frontend assets
 COPY scripts ./scripts
 COPY styles ./styles
-COPY img.jpg Demo.png ./
+COPY *.jpg *.png ./
 
 ENV NODE_ENV=production
 EXPOSE 3000
