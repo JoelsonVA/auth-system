@@ -53,7 +53,7 @@ function getToken() {
 function clearSessionAndRedirect() {
   localStorage.removeItem(STORAGE_KEYS.authToken);
   localStorage.removeItem(STORAGE_KEYS.authUser);
-  window.location.href = "./index.html?reason=session";
+  window.location.href = "/?reason=session";
 }
 
 function showFeedback(message, type = "info") {
@@ -316,7 +316,7 @@ async function handleFormSubmit(event) {
     };
 
     setTimeout(() => {
-      window.location.href = "./app.html";
+      window.location.href = "/app";
     }, 1500);
   } catch (error) {
     console.error("Erro ao salvar perfil:", error);
@@ -341,7 +341,7 @@ function handleCancel() {
       return;
     }
   }
-  window.location.href = "./app.html";
+  window.location.href = "/app";
 }
 
 async function deactivateAccount() {
@@ -394,7 +394,7 @@ async function deleteAccount() {
 
 function bindEvents() {
   elements.backButton.addEventListener("click", () => {
-    window.location.href = "./app.html";
+    window.location.href = "/app";
   });
 
   elements.cancelButton.addEventListener("click", handleCancel);

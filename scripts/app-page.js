@@ -107,7 +107,7 @@ function getToken() {
 function clearSessionAndRedirect() {
   localStorage.removeItem(STORAGE_KEYS.authToken);
   localStorage.removeItem(STORAGE_KEYS.authUser);
-  window.location.href = "./index.html?reason=session";
+  window.location.href = "/?reason=session";
 }
 
 function showFeedback(message, type = "info") {
@@ -1068,7 +1068,7 @@ async function handleJobSubmit(event) {
 function bindEvents() {
   elements.logoutButton.addEventListener("click", clearSessionAndRedirect);
   elements.editProfileButton.addEventListener("click", () => {
-    window.location.href = "./profile.html";
+    window.location.href = "/profile";
   });
   elements.freelancerSearchButton.addEventListener("click", loadFreelancers);
   elements.freelancerSearchInput.addEventListener("keydown", (event) => {

@@ -86,7 +86,7 @@ function validateRegisterPayload(accountType, name, email, password) {
 }
 
 function redirectToApp() {
-  window.location.href = "./app.html";
+  window.location.href = "/app";
 }
 
 async function onLoginSubmit(event) {
