@@ -72,11 +72,11 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(WEB_ROOT, "index.html"));
 });
 
-app.get("/app", (req, res) => {
+app.get("/app", authMiddleware, (req, res) => {
     res.sendFile(path.join(WEB_ROOT, "app.html"));
 });
 
-app.get("/profile", (req, res) => {
+app.get("/profile", authMiddleware, (req, res) => {
     res.sendFile(path.join(WEB_ROOT, "profile.html"));
 });
 
