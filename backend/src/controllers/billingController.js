@@ -179,6 +179,38 @@ async function upsertSubscriptionFromStripe(stripeSubscription) {
     );
 }
 
+async function markJobPaymentPaid(paymentId, stripeSessionId, stripePaymentIntentId) {
+    const paymentRows = await query(
+        "SELECT id, job_id, freelancer_id FROM job_payments WHERE id = ?",
+        [paymentId]
+    );
+    if (!paymentRows.length) {
+        return;
+    }
+
+    await query(
+        `
+        UPDATE job_payments
+        SET status = 'paid',
+            stripe_checkout_session_id = COALESCE(?, stripe_checkout_session_id),
+            stripe_payment_intent_id = COALESCE(?, stripe_payment_intent_id),
+            paid_at = NOW()
+        WHERE id = ?
+        `,
+        [stripeSessionId, stripePaymentIntentId, paymentId]
+    );
+
+    const notificationController = require("./notificationController");
+    await notificationController.createNotification(
+        paymentRows[0].freelancer_id,
+        "job",
+        "Pagamento confirmado",
+        "O pagamento do trabalho foi confirmado. Verifique/atualize seu método de recebimento no perfil.",
+        paymentRows[0].job_id,
+        null
+    );
+}
+
 exports.webhook = async (req, res) => {
     let stripe;
     try {
@@ -209,11 +241,20 @@ exports.webhook = async (req, res) => {
         switch (event.type) {
             case "checkout.session.completed": {
                 const session = event.data.object;
-                if (session.subscription) {
+                if (session.mode === "subscription" && session.subscription) {
                     const subscription = await stripe.subscriptions.retrieve(
                         session.subscription
                     );
                     await upsertSubscriptionFromStripe(subscription);
+                }
+
+                if (session.mode === "payment") {
+                    const paymentId = session.metadata?.paymentId;
+                    const paymentIntentId = session.payment_intent || null;
+
+                    if (paymentId) {
+                        await markJobPaymentPaid(paymentId, session.id, paymentIntentId);
+                    }
                 }
                 break;
             }

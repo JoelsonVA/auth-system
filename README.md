@@ -133,6 +133,7 @@ Configuração necessária no `.env` do backend:
 - `STRIPE_PRICE_ID_FREELANCER`
 - `STRIPE_PRICE_ID_CLIENT`
 - `STRIPE_SUCCESS_URL` / `STRIPE_CANCEL_URL` / `STRIPE_PORTAL_RETURN_URL`
+- (Jobs) `STRIPE_JOB_SUCCESS_URL` / `STRIPE_JOB_CANCEL_URL` (opcional)
 
 Rotas atualmente marcadas como Premium:
 - Mensagens: `POST /marketplace/messages` e `GET /marketplace/messages`

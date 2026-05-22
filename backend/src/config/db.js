@@ -116,6 +116,8 @@ function runSchemaSetup() {
             hourly_rate DECIMAL(10,2) NULL,
             location VARCHAR(120) NULL,
             portfolio_url VARCHAR(255) NULL,
+            payout_method VARCHAR(32) NULL,
+            payout_details TEXT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             CONSTRAINT fk_freelancer_profiles_user
@@ -130,6 +132,20 @@ function runSchemaSetup() {
             console.log("Erro ao criar tabela freelancer_profiles:", freelancerProfilesErr);
         }
     });
+
+    ensureColumnExists(
+        "freelancer_profiles",
+        "payout_method",
+        "VARCHAR(32) NULL",
+        "Erro ao criar coluna payout_method em freelancer_profiles"
+    );
+
+    ensureColumnExists(
+        "freelancer_profiles",
+        "payout_details",
+        "TEXT NULL",
+        "Erro ao criar coluna payout_details em freelancer_profiles"
+    );
 
     const createMessagesSql = `
         CREATE TABLE IF NOT EXISTS messages (
@@ -312,6 +328,43 @@ function runSchemaSetup() {
                 "Erro ao criar tabela billing_subscriptions:",
                 billingSubscriptionsErr
             );
+        }
+    });
+
+    const createJobPaymentsSql = `
+        CREATE TABLE IF NOT EXISTS job_payments (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            job_id INT NOT NULL UNIQUE,
+            client_id INT NOT NULL,
+            freelancer_id INT NOT NULL,
+            amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+            currency VARCHAR(10) NOT NULL DEFAULT 'brl',
+            status ENUM('pending', 'paid') NOT NULL DEFAULT 'pending',
+            stripe_checkout_session_id VARCHAR(128) NULL UNIQUE,
+            stripe_payment_intent_id VARCHAR(128) NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            paid_at DATETIME NULL,
+            INDEX idx_job_payments_client (client_id),
+            INDEX idx_job_payments_freelancer (freelancer_id),
+            INDEX idx_job_payments_status (status),
+            CONSTRAINT fk_job_payments_job
+                FOREIGN KEY (job_id)
+                REFERENCES jobs(id)
+                ON DELETE CASCADE,
+            CONSTRAINT fk_job_payments_client
+                FOREIGN KEY (client_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE,
+            CONSTRAINT fk_job_payments_freelancer
+                FOREIGN KEY (freelancer_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+    `;
+
+    connection.query(createJobPaymentsSql, (jobPaymentsErr) => {
+        if (jobPaymentsErr) {
+            console.log("Erro ao criar tabela job_payments:", jobPaymentsErr);
         }
     });
 }

@@ -67,8 +67,8 @@
                         </div>
                     </fieldset>
 
-                    <fieldset id="freelancerFields">
-                        <legend>Informações Profissionais</legend>
+	                    <fieldset id="freelancerFields">
+	                        <legend>Informações Profissionais</legend>
                         
                         <div class="form-group">
                             <label for="professionalTitle">Título Profissional</label>
@@ -100,11 +100,30 @@
                             <input type="number" id="hourlyRate" min="0" step="0.01" placeholder="150.00">
                         </div>
 
-                        <div class="form-group">
-                            <label for="portfolioUrl">Portfolio / Website</label>
-                            <input type="url" id="portfolioUrl" placeholder="https://meuportfolio.com">
-                        </div>
-                    </fieldset>
+	                        <div class="form-group">
+	                            <label for="portfolioUrl">Portfolio / Website</label>
+	                            <input type="url" id="portfolioUrl" placeholder="https://meuportfolio.com">
+	                        </div>
+	                    </fieldset>
+
+	                    <fieldset id="payoutFields">
+	                        <legend>Recebimento</legend>
+
+	                        <div class="form-group">
+	                            <label for="payoutMethod">Método de recebimento</label>
+	                            <select id="payoutMethod">
+	                                <option value="">Selecione...</option>
+	                                <option value="pix">PIX</option>
+	                                <option value="bank">Conta bancária</option>
+	                                <option value="paypal">PayPal</option>
+	                            </select>
+	                        </div>
+
+	                        <div class="form-group">
+	                            <label for="payoutDetails">Detalhes (chave PIX / banco / PayPal)</label>
+	                            <textarea id="payoutDetails" rows="3" placeholder="Ex: chave PIX, agência/conta, email PayPal..."></textarea>
+	                        </div>
+	                    </fieldset>
 
                     <div class="form-actions">
                         <button type="submit" class="btn-save">Salvar Alterações</button>

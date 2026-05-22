@@ -8,6 +8,7 @@ const marketplaceController = require("../controllers/marketplaceController");
 const jobController = require("../controllers/jobController");
 const userController = require("../controllers/userController");
 const notificationController = require("../controllers/notificationController");
+const paymentController = require("../controllers/paymentController");
 
 console.log("Loading marketplaceRoutes and registering user profile update route");
 
@@ -31,6 +32,11 @@ router.post("/jobs/apply", authMiddleware, jobController.applyToJob);
 router.get("/jobs/:jobId/applications", authMiddleware, jobController.getJobApplications);
 router.put("/jobs/applications/status", authMiddleware, jobController.updateApplicationStatus);
 router.put("/jobs/:jobId/complete", authMiddleware, jobController.completeJob);
+router.post("/jobs/:jobId/pay", authMiddleware, paymentController.createJobPaymentCheckout);
+
+// Payout (freelancer)
+router.get("/me/payout", authMiddleware, paymentController.getMyPayoutInfo);
+router.put("/me/payout", authMiddleware, paymentController.updateMyPayoutInfo);
 
 // User management routes
 router.post("/account/deactivate", authMiddleware, userController.deactivateAccount);

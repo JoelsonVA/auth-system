@@ -199,6 +199,15 @@ export async function completeJob(token, jobId) {
   });
 }
 
+export async function payJob(token, jobId) {
+  return sendRequest(`/marketplace/jobs/${jobId}/pay`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export async function deactivateAccount(token, days = 180) {
   return sendRequest("/marketplace/account/deactivate", {
     method: "POST",
@@ -274,5 +283,25 @@ export async function createBillingPortalSession(token) {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  });
+}
+
+export async function fetchMyPayout(token) {
+  return sendRequest("/marketplace/me/payout", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function updateMyPayout(token, payload) {
+  return sendRequest("/marketplace/me/payout", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
   });
 }

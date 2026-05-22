@@ -383,7 +383,7 @@ exports.completeJob = async (req, res) => {
     try {
         const rows = await query(
             `
-            SELECT id, client_id, assigned_freelancer_id, status, title
+            SELECT id, client_id, assigned_freelancer_id, status, title, budget
             FROM jobs
             WHERE id = ? AND client_id = ?
             `,
@@ -428,6 +428,37 @@ exports.completeJob = async (req, res) => {
             jobId,
             clientId
         );
+
+        const amount = Number(job.budget) || 0;
+        if (amount > 0) {
+            // Criar/garantir registro de pagamento pendente e notificar as partes
+            await query(
+                `
+                INSERT INTO job_payments (job_id, client_id, freelancer_id, amount, currency, status)
+                VALUES (?, ?, ?, ?, 'brl', 'pending')
+                ON DUPLICATE KEY UPDATE amount = VALUES(amount)
+                `,
+                [jobId, clientId, job.assigned_freelancer_id, amount]
+            );
+
+            await notificationController.createNotification(
+                clientId,
+                "job",
+                `Pagamento pendente: ${job.title}`,
+                `Pagamento de R$ ${amount.toFixed(2)} pendente. Clique para pagar e liberar o recebimento.`,
+                jobId,
+                job.assigned_freelancer_id
+            );
+
+            await notificationController.createNotification(
+                job.assigned_freelancer_id,
+                "job",
+                `Pagamento pendente: ${job.title}`,
+                "O cliente ainda não confirmou o pagamento. Configure seu método de recebimento no seu perfil.",
+                jobId,
+                clientId
+            );
+        }
 
         return res.json({
             message: "Trabalho concluído com sucesso"

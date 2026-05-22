@@ -5,6 +5,8 @@ import {
   fetchMyFreelancerProfile,
   updateProfile,
   saveMyFreelancerProfile,
+  fetchMyPayout,
+  updateMyPayout,
   deactivateAccount as apiDeactivateAccount,
   deleteAccount as apiDeleteAccount,
 } from "./api-client.js";
@@ -27,6 +29,8 @@ const elements = {
   hourlyRate: document.getElementById("hourlyRate"),
   portfolioUrl: document.getElementById("portfolioUrl"),
   professionalEmail: document.getElementById("professionalEmail"),
+  payoutMethod: document.getElementById("payoutMethod"),
+  payoutDetails: document.getElementById("payoutDetails"),
   profileAvatar: document.getElementById("profileAvatar"),
   profilePhoto: document.getElementById("profilePhoto"),
   deactivateBtn: document.getElementById("deactivateBtn"),
@@ -118,11 +122,28 @@ async function loadSession() {
       freelancerFieldset.style.display = isFreelancer ? 'block' : 'none';
     }
 
+    const payoutFieldset = document.getElementById('payoutFields');
+    if (payoutFieldset) {
+      payoutFieldset.style.display = isFreelancer ? 'block' : 'none';
+    }
+
     if (isFreelancer) {
       try {
         await loadFreelancerProfile(token);
       } catch (e) {
         console.log("Dados profissionais não disponíveis", e);
+      }
+
+      try {
+        const payout = await fetchMyPayout(token);
+        if (elements.payoutMethod) {
+          elements.payoutMethod.value = payout.payoutMethod || "";
+        }
+        if (elements.payoutDetails) {
+          elements.payoutDetails.value = payout.payoutDetails || "";
+        }
+      } catch (e) {
+        console.log("Payout não disponível", e);
       }
     }
 
@@ -256,6 +277,13 @@ async function handleFormSubmit(event) {
       };
 
       await saveMyFreelancerProfile(getToken(), freelancerPayload);
+
+      if (elements.payoutMethod && elements.payoutMethod.value) {
+        await updateMyPayout(getToken(), {
+          payoutMethod: elements.payoutMethod.value,
+          payoutDetails: elements.payoutDetails ? elements.payoutDetails.value.trim() : "",
+        });
+      }
     }
 
     currentUser.name = updateResult.user?.name || fullName;

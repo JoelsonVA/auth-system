@@ -19,6 +19,7 @@ import {
   deleteAccount as apiDeleteAccount,
   getAccountStatus,
   completeJob as apiCompleteJob,
+  payJob as apiPayJob,
   fetchBillingStatus,
   createCheckoutSession,
   createBillingPortalSession,
@@ -92,6 +93,7 @@ let currentUser = null;
 let currentMessageReceiver = null;
 let notificationRefreshInterval = null;
 let billingStatus = null;
+let notificationPanelOpen = false;
 
 const accountTypeLabels = {
   client: "Cliente",
@@ -213,6 +215,122 @@ function setPanelVisibility(isFreelancer, isAdmin) {
 
   // Jobs panel is visible for all authenticated users
   // Account management is visible for all authenticated users
+}
+
+async function loadNotifications() {
+  try {
+    const data = await getNotifications(getToken(), 20, 0);
+    const notifications = data.notifications || [];
+    const unread = Number(data.unread) || 0;
+    updateNotificationBadge(unread);
+    if (notificationPanelOpen) {
+      displayNotifications(notifications);
+    }
+  } catch (error) {
+    console.error("Erro ao carregar notificações:", error);
+  }
+}
+
+function updateNotificationBadge(unreadCount) {
+  if (!elements.notificationBadge) return;
+  elements.notificationBadge.textContent = String(unreadCount);
+  elements.notificationBadge.classList.toggle("hidden", unreadCount <= 0);
+}
+
+function displayNotifications(notifications) {
+  if (!elements.notificationsList) return;
+
+  elements.notificationsList.innerHTML = "";
+
+  if (!notifications.length) {
+    elements.notificationsList.innerHTML = '<p class="empty-message">Nenhuma notificação</p>';
+    return;
+  }
+
+  notifications.forEach((notification) => {
+    const item = document.createElement("div");
+    item.className = `notification-item ${notification.is_read ? "read" : "unread"}`;
+
+    const title = document.createElement("strong");
+    title.textContent = notification.title || "Notificação";
+
+    const content = document.createElement("p");
+    content.textContent = notification.content || "";
+
+    const meta = document.createElement("small");
+    meta.textContent = new Date(notification.created_at).toLocaleString("pt-BR");
+
+    const actions = document.createElement("div");
+    actions.className = "notification-actions";
+
+    const relatedJobId = notification.related_id;
+    const isPaymentPending =
+      typeof notification.title === "string" &&
+      notification.title.toLowerCase().startsWith("pagamento pendente");
+
+    if (isPaymentPending && relatedJobId && currentUser?.accountType === "client") {
+      const payBtn = document.createElement("button");
+      payBtn.type = "button";
+      payBtn.className = "primary-button";
+      payBtn.textContent = "Pagar agora";
+      payBtn.addEventListener("click", async () => {
+        try {
+          const { url } = await apiPayJob(getToken(), relatedJobId);
+          if (url) {
+            window.location.href = url;
+          } else {
+            showFeedback("Não foi possível abrir o pagamento.", "error");
+          }
+        } catch (error) {
+          console.error("Erro ao iniciar pagamento:", error);
+          showFeedback(getApiMessage(error, "Erro ao iniciar pagamento"), "error");
+        }
+      });
+      actions.appendChild(payBtn);
+    }
+
+    if (isPaymentPending && relatedJobId && currentUser?.accountType === "freelancer") {
+      const payoutBtn = document.createElement("button");
+      payoutBtn.type = "button";
+      payoutBtn.className = "secondary-button";
+      payoutBtn.textContent = "Configurar recebimento";
+      payoutBtn.addEventListener("click", () => {
+        window.location.href = "/profile#payout";
+      });
+      actions.appendChild(payoutBtn);
+    }
+
+    const readBtn = document.createElement("button");
+    readBtn.type = "button";
+    readBtn.className = "text-button";
+    readBtn.textContent = notification.is_read ? "Lida" : "Marcar como lida";
+    readBtn.disabled = Boolean(notification.is_read);
+    readBtn.addEventListener("click", async () => {
+      try {
+        await markNotificationAsRead(getToken(), notification.id);
+        await loadNotifications();
+      } catch (error) {
+        console.error("Erro ao marcar como lida:", error);
+      }
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "text-button";
+    deleteBtn.textContent = "Excluir";
+    deleteBtn.addEventListener("click", async () => {
+      try {
+        await deleteNotification(getToken(), notification.id);
+        await loadNotifications();
+      } catch (error) {
+        console.error("Erro ao excluir notificação:", error);
+      }
+    });
+
+    actions.append(readBtn, deleteBtn);
+    item.append(title, content, meta, actions);
+    elements.notificationsList.appendChild(item);
+  });
 }
 
 function renderFreelancerList(freelancers) {
@@ -923,6 +1041,7 @@ async function refreshAllData() {
   await loadJobs();
   await loadAccountStatus();
   await loadBillingStatus();
+  await loadNotifications();
   
   showFeedback("Dados atualizados com sucesso!", "success");
 }
@@ -976,6 +1095,27 @@ function bindEvents() {
   elements.deactivateAccountButton.addEventListener("click", deactivateAccount);
   elements.deleteAccountButton.addEventListener("click", deleteAccount);
 
+  if (elements.notificationBell) {
+    elements.notificationBell.addEventListener("click", async () => {
+      notificationPanelOpen = !notificationPanelOpen;
+      elements.notificationPanel.classList.toggle("hidden", !notificationPanelOpen);
+      if (notificationPanelOpen) {
+        await loadNotifications();
+      }
+    });
+  }
+
+  if (elements.markAllRead) {
+    elements.markAllRead.addEventListener("click", async () => {
+      try {
+        await markAllNotificationsAsRead(getToken());
+        await loadNotifications();
+      } catch (error) {
+        console.error("Erro ao marcar todas como lidas:", error);
+      }
+    });
+  }
+
   if (elements.premiumSubscribeButton) {
     elements.premiumSubscribeButton.addEventListener("click", () => {
       const planType = currentUser?.accountType || "client";
@@ -997,6 +1137,12 @@ async function initialize() {
   bindEvents();
   showFeedback("Carregando plataforma...", "info");
   await refreshAllData();
+
+  if (notificationRefreshInterval) {
+    clearInterval(notificationRefreshInterval);
+  }
+  notificationRefreshInterval = setInterval(loadNotifications, 15000);
+
   showFeedback("Plataforma pronta para uso.", "success");
 }
 
