@@ -64,7 +64,10 @@ const WEB_ROOT = path.resolve(__dirname, "..", "..");
 
 app.use("/styles", express.static(path.join(WEB_ROOT, "styles")));
 app.use("/scripts", express.static(path.join(WEB_ROOT, "scripts")));
-app.use("/favicon.ico", express.static(path.join(WEB_ROOT, "favicon.ico")));
+// Evita warnings no navegador caso não haja um favicon.ico físico no build.
+app.get("/favicon.ico", (req, res) => {
+    res.status(204).end();
+});
 app.use("/img.jpg", express.static(path.join(WEB_ROOT, "img.jpg")));
 app.use("/Demo.png", express.static(path.join(WEB_ROOT, "Demo.png")));
 
