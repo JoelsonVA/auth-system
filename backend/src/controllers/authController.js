@@ -142,6 +142,9 @@ exports.register = async (req, res) => {
 
 // ================= LOGIN =================
 
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MINUTES = 30;
+
 exports.login = async (req, res) => {
     let validated;
     try {
@@ -171,9 +174,65 @@ exports.login = async (req, res) => {
         }
 
         const user = results[0];
+
+        // Check if the account is currently locked
+        const lockRows = await query(
+            `SELECT attempt_count, locked_until
+             FROM failed_login_attempts
+             WHERE user_id = ?`,
+            [user.id]
+        );
+
+        if (lockRows.length > 0) {
+            const { locked_until } = lockRows[0];
+
+            if (locked_until && new Date(locked_until) > new Date()) {
+                const lockedUntilDate = new Date(locked_until);
+                const minutesRemaining = Math.ceil(
+                    (lockedUntilDate - new Date()) / (1000 * 60)
+                );
+
+                return res.status(429).json({
+                    message: `Conta temporariamente bloqueada devido a múltiplas tentativas de login. Tente novamente em ${minutesRemaining} minuto(s).`
+                });
+            }
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
+            // Upsert the failed attempt record and lock if threshold is reached
+            if (lockRows.length === 0) {
+                await query(
+                    `INSERT INTO failed_login_attempts (user_id, email, attempt_count, locked_until)
+                     VALUES (?, ?, 1, NULL)`,
+                    [user.id, user.email]
+                );
+            } else {
+                const newCount = lockRows[0].attempt_count + 1;
+                const shouldLock = newCount >= MAX_FAILED_ATTEMPTS;
+
+                await query(
+                    `UPDATE failed_login_attempts
+                     SET attempt_count = ?,
+                         locked_until  = ?
+                     WHERE user_id = ?`,
+                    [
+                        newCount,
+                        shouldLock
+                            ? new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000)
+                            : null,
+                        user.id
+                    ]
+                );
+
+                if (shouldLock) {
+                    return res.status(429).json({
+                        message: `Conta bloqueada após ${MAX_FAILED_ATTEMPTS} tentativas incorretas. Tente novamente em ${LOCKOUT_DURATION_MINUTES} minuto(s).`
+                    });
+                }
+            }
+
             return res.status(401).json({
                 message: "Senha incorreta"
             });
@@ -185,6 +244,12 @@ exports.login = async (req, res) => {
                 message: "Tipo de conta incompatível com este login"
             });
         }
+
+        // Successful login — clear any failed attempt record
+        await query(
+            "DELETE FROM failed_login_attempts WHERE user_id = ?",
+            [user.id]
+        );
 
         const token = jwt.sign(
             {
