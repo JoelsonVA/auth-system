@@ -1,3 +1,4 @@
+const { z } = require("zod");
 const connection = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -60,29 +61,35 @@ function normalizeAccountType(value) {
     return normalized;
 }
 
+// ================= SCHEMAS =================
+
+const registerSchema = z.object({
+    name: z.string().min(1, "Nome é obrigatório").max(150),
+    email: z.string().email("Email inválido"),
+    password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+    accountType: z.enum(["client", "freelancer"], { message: "Tipo de conta inválido" })
+});
+
+const loginSchema = z.object({
+    email: z.string().email("Email inválido"),
+    password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+    accountType: z.enum(["client", "freelancer"], { message: "Tipo de conta inválido" })
+});
+
 // ================= REGISTER =================
 
 exports.register = async (req, res) => {
-    const { name, email, password, accountType } = req.body;
+    let validated;
+    try {
+        validated = registerSchema.parse(req.body);
+    } catch (error) {
+        return res.status(400).json({
+            message: error.errors[0]?.message ?? "Dados inválidos"
+        });
+    }
+
+    const { name, email, password, accountType } = validated;
     const normalizedAccountType = normalizeAccountType(accountType);
-
-    if (!name || !email || !password || !normalizedAccountType) {
-        return res.status(400).json({
-            message: "Nome, email, senha e tipo de conta são obrigatórios"
-        });
-    }
-
-    if (!isValidEmail(email)) {
-        return res.status(400).json({
-            message: "Digite um email válido"
-        });
-    }
-
-    if (password.length < 8) {
-        return res.status(400).json({
-            message: "A senha precisa ter pelo menos 8 caracteres"
-        });
-    }
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -136,14 +143,17 @@ exports.register = async (req, res) => {
 // ================= LOGIN =================
 
 exports.login = async (req, res) => {
-    const { email, password, accountType } = req.body;
-    const normalizedAccountType = normalizeAccountType(accountType);
-
-    if (!email || !password || !normalizedAccountType) {
+    let validated;
+    try {
+        validated = loginSchema.parse(req.body);
+    } catch (error) {
         return res.status(400).json({
-            message: "Email, senha e tipo de conta são obrigatórios"
+            message: error.errors[0]?.message ?? "Dados inválidos"
         });
     }
+
+    const { email, password, accountType } = validated;
+    const normalizedAccountType = normalizeAccountType(accountType);
 
     try {
         const sql = `
