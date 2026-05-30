@@ -331,6 +331,30 @@ function runSchemaSetup() {
         }
     });
 
+    const createFailedLoginAttemptsSql = `
+        CREATE TABLE IF NOT EXISTS failed_login_attempts (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            email VARCHAR(150) NOT NULL,
+            attempt_count INT NOT NULL DEFAULT 1,
+            locked_until DATETIME NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_failed_attempts_email (email),
+            INDEX idx_failed_attempts_locked_until (locked_until),
+            CONSTRAINT fk_failed_attempts_user
+                FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+    `;
+
+    connection.query(createFailedLoginAttemptsSql, (failedLoginAttemptsErr) => {
+        if (failedLoginAttemptsErr) {
+            console.log("Erro ao criar tabela failed_login_attempts:", failedLoginAttemptsErr);
+        }
+    });
+
     const createJobPaymentsSql = `
         CREATE TABLE IF NOT EXISTS job_payments (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
