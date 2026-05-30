@@ -79,8 +79,8 @@ function runSchemaSetup() {
             "Erro ao criar coluna professional_email"
         );
 
-        // Criar usuário admin padrão se não existir
-        createDefaultAdmin();
+        // Admin accounts must be created manually via the API or directly
+        // in the database. No default credentials are seeded automatically.
     });
 
     const createLoginEventsSql = `
@@ -365,33 +365,6 @@ function runSchemaSetup() {
     connection.query(createJobPaymentsSql, (jobPaymentsErr) => {
         if (jobPaymentsErr) {
             console.log("Erro ao criar tabela job_payments:", jobPaymentsErr);
-        }
-    });
-}
-
-function createDefaultAdmin() {
-    const adminEmail = 'admin@freelancehub.com';
-    const adminPassword = '$2b$10$wo4pj3rO9ILRaa37hzH8T.w8KGZOHLHS7qhxP2eRi4ohf7G9Wlbx2'; // Senha: admin123
-    const adminName = 'Administrador';
-
-    const checkAdminSql = 'SELECT id FROM users WHERE email = ?';
-    connection.query(checkAdminSql, [adminEmail], (err, results) => {
-        if (err) {
-            console.log('Erro ao verificar admin:', err);
-            return;
-        }
-        if (results.length === 0) {
-            const insertAdminSql = `
-                INSERT INTO users (name, email, password, is_admin, account_type)
-                VALUES (?, ?, ?, 1, 'client')
-            `;
-            connection.query(insertAdminSql, [adminName, adminEmail, adminPassword], (insertErr) => {
-                if (insertErr) {
-                    console.log('Erro ao criar admin padrão:', insertErr);
-                } else {
-                    console.log('Admin padrão criado: admin@freelancehub.com / admin123');
-                }
-            });
         }
     });
 }
