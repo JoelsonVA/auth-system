@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./config.js";
+import { API_BASE_URL, STORAGE_KEYS } from "./config.js";
 
 export class ApiError extends Error {
   constructor(message, status, data) {
@@ -17,12 +17,38 @@ async function parseJson(response) {
   }
 }
 
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    const expiresAt = payload.exp * 1000; // exp is in seconds, convert to ms
+    return Date.now() >= expiresAt;
+  } catch {
+    return true;
+  }
+}
+
 async function sendRequest(path, options = {}) {
+  const token = localStorage.getItem(STORAGE_KEYS.authToken);
+  if (token && isTokenExpired(token)) {
+    localStorage.clear();
+    window.location.href = "/?reason=session";
+    return;
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     mode: "cors",
     ...options,
   });
   const data = await parseJson(response);
+
+  if (response.status === 401) {
+    localStorage.clear();
+    window.location.href = "/?reason=session";
+    return;
+  }
 
   if (!response.ok) {
     throw new ApiError(
